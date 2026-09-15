@@ -124,7 +124,7 @@ export async function sendRegistrationEmail(
   `
 
   try {
-    const res = await resend.emails.send({
+    let res = await resend.emails.send({
       from: fromEmail,
       to: toEmail,
       reply_to: data.email,
@@ -137,6 +137,27 @@ export async function sendRegistrationEmail(
         },
       ],
     })
+
+    // If Resend is running in trial mode with default 'onboarding@resend.dev',
+    // Resend restricts delivery to the account owner's email address until a domain is verified.
+    if (res.error && (res.error as any).statusCode === 403 && (res.error as any).message?.includes('only send testing emails')) {
+      const match = (res.error as any).message.match(/\(([^)]+)\)/)
+      const fallbackTo = match ? match[1] : 'allisonfezyy@gmail.com'
+      console.warn(`[Resend Sandbox] Retrying delivery to verified test recipient: ${fallbackTo}`)
+      res = await resend.emails.send({
+        from: fromEmail,
+        to: fallbackTo,
+        reply_to: data.email,
+        subject: `[JD Outsourcing - Target: ${toEmail}] New staff registration — ${data.fullName}`,
+        html: `<div style="padding:10px 14px;background:#fff3cd;color:#856404;border-bottom:1px solid #ffeeba;margin-bottom:15px;font-size:12px;font-family:sans-serif;"><strong>Resend Test Mode Note:</strong> Target recipient was <code>${toEmail}</code>. Delivered to verified address <code>${fallbackTo}</code>. To send directly to yahoo/corporate emails, verify your domain at resend.com.</div>` + htmlContent,
+        attachments: [
+          {
+            filename: cleanFilename,
+            content: attachment.content,
+          },
+        ],
+      })
+    }
 
     if (res.error) {
       console.error('[Resend] Registration email error:', res.error)
@@ -278,13 +299,26 @@ export async function sendTestResultEmail(
   `
 
   try {
-    const res = await resend.emails.send({
+    let res = await resend.emails.send({
       from: fromEmail,
       to: toEmail,
       reply_to: data.email,
       subject: `Aptitude test result — ${data.fullName} (${data.correct}/${data.total})`,
       html: htmlContent,
     })
+
+    if (res.error && (res.error as any).statusCode === 403 && (res.error as any).message?.includes('only send testing emails')) {
+      const match = (res.error as any).message.match(/\(([^)]+)\)/)
+      const fallbackTo = match ? match[1] : 'allisonfezyy@gmail.com'
+      console.warn(`[Resend Sandbox] Retrying test result delivery to verified test recipient: ${fallbackTo}`)
+      res = await resend.emails.send({
+        from: fromEmail,
+        to: fallbackTo,
+        reply_to: data.email,
+        subject: `[JD Outsourcing - Target: ${toEmail}] Aptitude test result — ${data.fullName} (${data.correct}/${data.total})`,
+        html: `<div style="padding:10px 14px;background:#fff3cd;color:#856404;border-bottom:1px solid #ffeeba;margin-bottom:15px;font-size:12px;font-family:sans-serif;"><strong>Resend Test Mode Note:</strong> Target recipient was <code>${toEmail}</code>. Delivered to verified address <code>${fallbackTo}</code>. To send directly to yahoo/corporate emails, verify your domain at resend.com.</div>` + htmlContent,
+      })
+    }
 
     if (res.error) {
       console.error('[Resend] Test result email error:', res.error)
