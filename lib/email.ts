@@ -71,7 +71,7 @@ export async function sendRegistrationEmail(
   }
 
   const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev'
-  const toEmail = process.env.RECIPIENT_EMAIL || 'allisonfezyy@gmail.com'
+  const toEmail = process.env.RECIPIENT_EMAIL || 'jdoutsourcingconsultingltd@yahoo.com'
   const cleanFilename = sanitizeFilename(attachment.filename)
 
   const htmlContent = `
@@ -188,7 +188,7 @@ export async function sendTestResultEmail(
   }
 
   const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev'
-  const toEmail = process.env.RECIPIENT_EMAIL || 'allisonfezyy@gmail.com'
+  const toEmail = process.env.RECIPIENT_EMAIL || 'jdoutsourcingconsultingltd@yahoo.com'
 
   const breakdownRows = data.breakdown
     .map(
