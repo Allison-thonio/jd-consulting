@@ -18,7 +18,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^13.2.0",
     "lucide-react": "^0.513.0",
-    "mongodb": "^6.13.0",
+    "mongodb": "^6.21.0",
     "next": "^15.3.9",
     "react": "^19",
     "react-dom": "^19",

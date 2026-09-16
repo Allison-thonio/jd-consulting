@@ -3,8 +3,9 @@ import type { Metadata, Viewport } from 'next'
 import { Fraunces, IBM_Plex_Sans } from 'next/font/google'
 import './globals.css'
 
-const fraunces = Fraunces({ subsets: ['latin'], weight: ['400', '500', '600'], style: ['normal', 'italic'], variable: '--font-fraunces' })
-const plex = IBM_Plex_Sans({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-plex' })
+const fraunces = Fraunces({ subsets: ['latin'], weight: ['400', '500', '600'], style: ['normal', 'italic'], variable: '--font-fraunces', display: 'swap', fallback: ['serif'] })
+const plex = IBM_Plex_Sans({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-plex', display: 'swap', fallback: ['system-ui', 'sans-serif'] })
+
 
 export const metadata: Metadata = { title: 'JD Outsourcing & Consulting Ltd', description: 'People, process, and performance. Register as a candidate with JD Outsourcing & Consulting Ltd.', generator: 'v0.app' }
 export const viewport: Viewport = { colorScheme: 'light', themeColor: '#16303B' }
