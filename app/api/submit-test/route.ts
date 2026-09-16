@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClientIp, checkRateLimit } from '@/lib/rate-limit'
 import { getQuestionsFor } from '@/lib/questions'
-import { sendTestResultEmail } from '@/lib/email'
+import { sendCombinedRegistrationAndTestEmail } from '@/lib/email'
 import { logTestResultToDb } from '@/lib/mongodb'
+import { getRegistrationByEmail } from '@/lib/registration-store'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -123,19 +124,44 @@ export async function POST(req: NextRequest) {
   const percentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0
   const submittedAt = new Date()
 
-  // 4. Send Results via Resend Email
-  const emailResult = await sendTestResultEmail({
-    fullName,
-    email,
-    position,
-    level,
-    correct: correctCount,
-    total: totalQuestions,
-    percentage,
-    breakdown,
-    submittedAt,
-    ip: clientIp,
-  })
+  // 4. Retrieve candidate registration details (including uploaded CV document) paired by email & IP
+  const registration = await getRegistrationByEmail(email, clientIp)
+
+  const candidateFullName = registration?.fullName || fullName
+  const candidatePosition = registration?.position || position
+  const candidatePhone = registration?.phone
+  const candidateAge = registration?.age
+  const candidateLocation = registration?.location
+  const candidateEducation = registration?.education || level
+  const candidateExperience = registration?.experience
+
+  const attachment =
+    registration && registration.documentFilename && registration.documentBuffer && registration.documentBuffer.length > 0
+      ? { filename: registration.documentFilename, content: registration.documentBuffer }
+      : null
+
+  // 5. Send Combined Results + Candidate Registration + CV attachment via Resend Email
+  const emailResult = await sendCombinedRegistrationAndTestEmail(
+    {
+      fullName: candidateFullName,
+      email,
+      phone: candidatePhone,
+      age: candidateAge,
+      location: candidateLocation,
+      education: candidateEducation,
+      position: candidatePosition,
+      experience: candidateExperience,
+      registeredAt: registration?.submittedAt,
+      level,
+      correct: correctCount,
+      total: totalQuestions,
+      percentage,
+      breakdown,
+      submittedAt,
+      ip: clientIp,
+    },
+    attachment
+  )
 
   if (!emailResult.success) {
     return NextResponse.json(
@@ -144,11 +170,11 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // 5. Best-effort MongoDB write (never blocks or fails the request)
+  // 6. Best-effort MongoDB write (never blocks or fails the request)
   await logTestResultToDb({
-    fullName,
+    fullName: candidateFullName,
     email,
-    position,
+    position: candidatePosition,
     level,
     correct: correctCount,
     total: totalQuestions,
@@ -158,7 +184,7 @@ export async function POST(req: NextRequest) {
     ip: clientIp,
   })
 
-  // 6. Return response to candidate
+  // 7. Return response to candidate
   return NextResponse.json(
     {
       success: true,
@@ -169,3 +195,4 @@ export async function POST(req: NextRequest) {
     { status: 200 }
   )
 }
+

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClientIp, checkRateLimit } from '@/lib/rate-limit'
 import { verifyTurnstileToken } from '@/lib/turnstile'
-import { sendRegistrationEmail } from '@/lib/email'
-import { logRegistrationToDb } from '@/lib/mongodb'
+import { savePendingRegistration } from '@/lib/registration-store'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PHONE_REGEX = /^[+]?[\d\s-]{7,20}$/
@@ -25,15 +24,7 @@ function getFileExtension(filename: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  // 1. Service Configuration Check: RESEND_API_KEY required for registration
-  if (!process.env.RESEND_API_KEY) {
-    return NextResponse.json(
-      { error: 'Email delivery service is misconfigured. Please contact administrator.' },
-      { status: 503 }
-    )
-  }
-
-  // 2. Rate Limiting: 5 requests per IP per 10 minutes (600 seconds)
+  // 1. Rate Limiting: 5 requests per IP per 10 minutes (600 seconds)
   const clientIp = getClientIp(req)
   const rateLimitResult = await checkRateLimit(`register:${clientIp}`, 5, 600)
   if (!rateLimitResult.success) {
@@ -48,7 +39,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // 3. Parse Multipart Form Data
+  // 2. Parse Multipart Form Data
   let formData: FormData
   try {
     formData = await req.formData()
@@ -80,7 +71,7 @@ export async function POST(req: NextRequest) {
   const experience = typeof rawExperience === 'string' ? rawExperience.trim().slice(0, 30) : ''
   const turnstileTokenStr = typeof turnstileToken === 'string' ? turnstileToken.trim() : ''
 
-  // 4. Server-Side Turnstile Verification
+  // 3. Server-Side Turnstile Verification
   const turnstileResult = await verifyTurnstileToken(turnstileTokenStr, clientIp)
   if (!turnstileResult.ok) {
     return NextResponse.json(
@@ -89,7 +80,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // 5. Field Validations
+  // 4. Field Validations
   if (!fullName) {
     return NextResponse.json({ error: 'Full name is required.' }, { status: 400 })
   }
@@ -129,7 +120,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Experience level is required.' }, { status: 400 })
   }
 
-  // 6. File Validation
+  // 5. File Validation
   if (!documentEntry || !(documentEntry instanceof File)) {
     return NextResponse.json(
       { error: 'Please attach your CV or supporting document.' },
@@ -179,49 +170,23 @@ export async function POST(req: NextRequest) {
 
   const submittedAt = new Date()
 
-  // 7. Dispatch Email via Resend
-  const emailResult = await sendRegistrationEmail(
-    {
-      fullName,
-      phone,
-      email,
-      age: parsedAge,
-      location,
-      education,
-      position,
-      experience,
-      submittedAt,
-      ip: clientIp,
-    },
-    {
-      filename: file.name,
-      content: fileBuffer,
-    }
-  )
-
-  if (!emailResult.success) {
-    return NextResponse.json(
-      { error: emailResult.error || 'Failed to dispatch registration email to hiring team.' },
-      { status: 502 }
-    )
-  }
-
-  // 8. Best-effort DB write (never blocks or fails the request)
-  await logRegistrationToDb({
+  // 6. Save registration details and CV document to store (to be combined in email upon test completion)
+  await savePendingRegistration({
     fullName,
     phone,
     email,
     age: parsedAge,
     location,
-    education,
+    education: education as 'SSCE' | 'Graduate',
     position,
     experience,
     documentFilename: file.name,
-    documentSizeBytes: file.size,
+    documentBuffer: fileBuffer,
     submittedAt,
     ip: clientIp,
   })
 
-  // 9. Respond with 200 Success
-  return NextResponse.json({ success: true }, { status: 200 })
+  // 7. Respond with 200 Success
+  return NextResponse.json({ success: true, message: 'Registration saved. Please complete the assessment.' }, { status: 200 })
 }
+

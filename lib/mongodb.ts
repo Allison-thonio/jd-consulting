@@ -53,8 +53,10 @@ export interface RegistrationDocument {
   experience: string
   documentFilename: string
   documentSizeBytes: number
+  documentBase64?: string
   submittedAt: Date
   ip: string
+  status?: 'pending_test' | 'completed'
 }
 
 export interface TestResultDocument {
@@ -91,6 +93,27 @@ export async function logRegistrationToDb(doc: RegistrationDocument): Promise<vo
 }
 
 /**
+ * Best-effort query to find candidate registration by email from 'registrations' collection.
+ */
+export async function getRegistrationByEmailFromDb(email: string): Promise<RegistrationDocument | null> {
+  try {
+    const db = await getDb()
+    if (!db) return null
+
+    const doc = await db.collection<RegistrationDocument>('registrations')
+      .find({ email: { $regex: new RegExp(`^${email.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i') } })
+      .sort({ submittedAt: -1 })
+      .limit(1)
+      .toArray()
+
+    return doc.length > 0 ? doc[0] : null
+  } catch (err) {
+    console.error('[MongoDB] Failed to fetch registration document by email:', err)
+    return null
+  }
+}
+
+/**
  * Best-effort write to the 'testResults' collection.
  * Catches all errors internally so database failures NEVER block or fail the test submission.
  */
@@ -104,3 +127,4 @@ export async function logTestResultToDb(doc: TestResultDocument): Promise<void> 
     console.error('[MongoDB] Failed to log candidate test result document:', err)
   }
 }
+

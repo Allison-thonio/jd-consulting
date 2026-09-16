@@ -101,6 +101,7 @@ export default function Page() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [error, setError] = useState('')
+  const [testResult, setTestResult] = useState<{ correct: number; total: number; percentage: number } | null>(null)
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -136,12 +137,13 @@ export default function Page() {
     }
 
     const candidateLevel = level()
-    setFormData({
+    const candidateData = {
       fullName: String(fd.get('fullName')),
       email: String(fd.get('email')),
       position: String(fd.get('position')),
       level: candidateLevel,
-    })
+    }
+    setFormData(candidateData)
 
     setStep('loading')
     try {
@@ -170,6 +172,11 @@ export default function Page() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Assessment could not be submitted.')
+      setTestResult({
+        correct: data.correct,
+        total: data.total,
+        percentage: data.percentage,
+      })
       setStep('done')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Assessment could not be submitted.')
@@ -254,19 +261,31 @@ export default function Page() {
 
             <AnimatePresence mode="wait">
               {step === 'done' ? (
-                <motion.div key="done" className="py-20 text-center">
+                <motion.div key="done" className="py-16 text-center">
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-navyLight text-tealSoft">
                     <Check size={30} />
                   </div>
-                  <h3 className="mt-6 font-display text-4xl">All done.</h3>
-                  <p className="mx-auto mt-4 max-w-sm leading-relaxed text-teal">
-                    Your registration and assessment have been sent to JD Outsourcing. Thank you for taking this step with us.
+                  <h3 className="mt-6 font-display text-4xl">Assessment Complete!</h3>
+                  
+                  {testResult && (
+                    <div className="my-6 p-5 rounded bg-[#eaf0f0] border border-line inline-block text-center min-w-[240px]">
+                      <p className="text-xs uppercase tracking-wider text-teal font-semibold">Your Score ({formData.level})</p>
+                      <p className="text-3xl font-bold text-navy mt-1">
+                        {testResult.correct} / {testResult.total}
+                        <span className="text-base font-normal text-teal ml-2">({testResult.percentage}%)</span>
+                      </p>
+                    </div>
+                  )}
+
+                  <p className="mx-auto mt-2 max-w-md leading-relaxed text-teal">
+                    Thank you, <strong>{formData.fullName}</strong>. Both your registration profile (with CV) and your assessment scores have been sent directly to the JD Outsourcing HR team.
                   </p>
                   <button
-                    className="text-link mt-8"
+                    className="text-link mt-8 block mx-auto text-sm"
                     onClick={() => {
                       setStep('form')
                       setAnswers({})
+                      setTestResult(null)
                       setError('')
                     }}
                   >
