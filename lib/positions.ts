@@ -145,24 +145,6 @@ export const RECRUITMENT_POSITIONS: JobRole[] = [
     ],
     idealFor: 'Courteous, honest, and energetic individuals eager to start a thriving retail career.'
   },
-  {
-    id: 'eyeshadow-specialist',
-    rank: 8,
-    title: 'Eyeshadow / Beauty Specialist',
-    department: 'Beauty, Cosmetics & Makeup Artistry',
-    levelBadge: 'Specialized Tier · Beauty & Cosmetics Artistry',
-    salaryTier: 'Level 8 — Competitive Base + Artistry Incentives',
-    educationRequired: 'SSCE',
-    experienceRequired: '0–2 years (Knowledge of makeup or beauty passion; training provided)',
-    shortSummary: 'Provide eye makeup styling, eyeshadow blending, cosmetic advisory, and professional beauty product demonstrations for clients.',
-    keyDuties: [
-      'Consult with clients to recommend complementary eyeshadow palettes and cosmetic products.',
-      'Perform delicate eyeshadow and facial cosmetic applications with hygiene and precision.',
-      'Demonstrate cosmetic product usage, care routines, and application techniques to buyers.',
-      'Maintain impeccably clean, sanitized makeup stations, brushes, and testing palettes.'
-    ],
-    idealFor: 'Passionate makeup artists, beauty enthusiasts, and cosmetics consultants.'
-  }
 ]
 
 export const ELIGIBILITY_RULES = [
@@ -174,12 +156,12 @@ export const ELIGIBILITY_RULES = [
   {
     num: '2',
     rule: 'Educational Qualifications',
-    desc: 'Candidates must possess relevant academic certificates: minimum SSCE / O\'Level for attendant and beauty roles; OND / HND / B.Sc for administrative, supervisory, accounting, and managerial roles.'
+    desc: 'Candidates must possess relevant academic certificates: minimum SSCE / O\'Level for sales attendant and sales representative roles; OND / HND / B.Sc for administrative, supervisory, marketing, accounting, and managerial roles.'
   },
   {
     num: '3',
     rule: 'Location & Immediate Availability',
-    desc: 'Must reside in Rivers State (Port Harcourt & environs) or be genuinely prepared to resume work immediately upon completion of screening.'
+    desc: 'Must reside in Rivers State (Port Harcourt & environs) or Bayelsa State (Yenagoa & environs), or be genuinely prepared to resume work immediately upon completion of screening.'
   },
   {
     num: '4',

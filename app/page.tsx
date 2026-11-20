@@ -221,7 +221,7 @@ export default function Page() {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-navy/95 via-navy/75 to-navy/40 pointer-events-none" />
           <div className="relative z-10 mx-auto max-w-6xl px-5 py-24 md:px-8 md:py-36">
-            <p className="eyebrow text-tealSoft">Port Harcourt · Rivers State · Nigeria</p>
+            <p className="eyebrow text-tealSoft">Port Harcourt (Rivers State) · Yenagoa (Bayelsa State) · Nigeria</p>
             <h1 className="mt-5 max-w-3xl text-5xl leading-[.95] text-paper md:text-8xl">
               People. Process.<br />
               <em>Performance.</em>
@@ -427,7 +427,7 @@ export default function Page() {
                       ['fullName', 'Full name', 'text'],
                       ['phone', 'Phone number', 'tel'],
                       ['email', 'Email address', 'email'],
-                      ['location', 'Current location', 'text'],
+                      ['location', 'Current location (e.g. Port Harcourt, Yenagoa)', 'text'],
                     ].map(([name, label, type]) => (
                       <label className="field" key={name}>
                         {label}
@@ -628,14 +628,15 @@ export default function Page() {
               </div>
 
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-tealSoft">Head Office</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-tealSoft">Operational Offices</p>
                 <div className="mt-3 flex items-start gap-2.5 text-sm leading-relaxed text-tealSoft">
                   <MapPin size={16} className="mt-1 shrink-0 text-tealSoft" />
-                  <span>
-                    House 1, JD Outsourcing &amp; Consulting Ltd Office,<br />
-                    Ada George Road, Port Harcourt,<br />
-                    Rivers State, Nigeria.
-                  </span>
+                  <div>
+                    <span className="font-semibold text-paper block">Port Harcourt (Head Office):</span>
+                    <span>House 1, JD Outsourcing &amp; Consulting Ltd Office, Ada George Road, Port Harcourt, Rivers State.</span>
+                    <span className="font-semibold text-paper block mt-2">Bayelsa State Operations:</span>
+                    <span>Yenagoa, Bayelsa State, Nigeria.</span>
+                  </div>
                 </div>
               </div>
 
