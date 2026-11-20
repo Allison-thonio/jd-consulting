@@ -94,9 +94,9 @@ export async function POST(req: NextRequest) {
   }
 
   const parsedAge = parseInt(String(rawAge || ''), 10)
-  if (isNaN(parsedAge) || parsedAge < 16 || parsedAge > 70) {
+  if (isNaN(parsedAge) || parsedAge < 18 || parsedAge > 35) {
     return NextResponse.json(
-      { error: 'Please enter a valid age between 16 and 70.' },
+      { error: 'Eligibility requirement: All applicants must strictly be between 18 and 35 years of age.' },
       { status: 400 }
     )
   }

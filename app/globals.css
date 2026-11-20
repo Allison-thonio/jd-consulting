@@ -20,6 +20,8 @@ body { margin:0; background:#F5F7F6; color:#16303B; font-family:var(--font-plex)
 .eyebrow { color:#3D6E76; font-size:.7rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase; }
 .btn { display:inline-flex; align-items:center; gap:.55rem; background:#1F4552; color:#F5F7F6; padding:.85rem 1.15rem; font-size:.8rem; font-weight:600; transition:background .2s, transform .2s; }
 .btn:hover { background:#3D6E76; transform:translateY(-1px); }
+.btn-secondary { display:inline-flex; align-items:center; gap:.55rem; background:transparent; color:#16303B; padding:.85rem 1.15rem; font-size:.8rem; font-weight:600; border:1px solid #C7D6D9; transition:background .2s, border-color .2s; }
+.btn-secondary:hover { background:#eaf0f0; border-color:#3D6E76; }
 .btn:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline:2px solid #3D6E76; outline-offset:3px; }
 .pill { border:1px solid #C7D6D9; border-radius:999px; padding:.55rem .85rem; color:#3D6E76; font-size:.82rem; }
 .card { border:1px solid #C7D6D9; padding:1.5rem; min-height:230px; }
@@ -35,4 +37,37 @@ body { margin:0; background:#F5F7F6; color:#16303B; font-family:var(--font-plex)
 .option input { accent-color:#3D6E76; }
 .error { color:#9b3e49; background:#f7e9ea; padding:.75rem; font-size:.85rem; }
 .text-link { color:#3D6E76; text-decoration:underline; text-underline-offset:4px; }
+
+/* ── Intro Curtain Splash ── */
+.intro-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #16303B;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  pointer-events: none;
+}
+.intro-curtain.exit {
+  animation: curtainExit 0.65s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+}
+@keyframes curtainExit {
+  0%   { clip-path: inset(0 0 0 0); opacity: 1; }
+  60%  { clip-path: inset(0 0 0 0); opacity: 1; }
+  100% { clip-path: inset(0 0 100% 0); opacity: 0; }
+}
+.curtain-logo {
+  animation: curtainFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.curtain-tagline {
+  animation: curtainFadeUp 0.7s 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes curtainFadeUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; } }
