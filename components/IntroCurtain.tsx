@@ -114,7 +114,7 @@ export default function IntroCurtain() {
           lineHeight: 1.5,
         }}
       >
-        We Recruit. We Train. We Employ.
+        We Recruit. We Employ. We Train.
       </p>
     </div>
   )

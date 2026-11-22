@@ -227,7 +227,7 @@ export default function Page() {
               <em>Performance.</em>
             </h1>
             <p className="mt-8 max-w-lg text-lg leading-relaxed text-tealSoft">
-              We recruit, we train, and we connect capable people with the organisations shaping what comes next — through thoughtful outsourcing, consulting, and workforce partnerships.
+              We recruit, we employ, and we train capable people to connect with the organisations shaping what comes next — through thoughtful outsourcing, consulting, and workforce partnerships.
             </p>
             <a href="#register" className="btn mt-9">
               Register as a candidate <ArrowUpRight size={16} />
@@ -622,7 +622,7 @@ export default function Page() {
                 <Logo />
                 <p className="mt-4 text-xs leading-relaxed text-tealSoft">
                   People · Process · Performance<br />
-                  We recruit. We train. We employ.
+                  We Recruit. We Employ. We Train.
                 </p>
                 <p className="mt-2 text-[11px] text-tealSoft/80">Company Registration No. 9646756</p>
               </div>
