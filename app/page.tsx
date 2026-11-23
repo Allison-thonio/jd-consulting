@@ -227,7 +227,7 @@ export default function Page() {
               <em>Performance.</em>
             </h1>
             <p className="mt-8 max-w-lg text-lg leading-relaxed text-tealSoft">
-              We recruit, we employ, and we train capable people to connect with the organisations shaping what comes next — through thoughtful outsourcing, consulting, and workforce partnerships.
+              Your bridge to verified employment. We recruit capable talent, place you with leading businesses, and train you for long-term success.
             </p>
             <a href="#register" className="btn mt-9">
               Register as a candidate <ArrowUpRight size={16} />
@@ -645,8 +645,8 @@ export default function Page() {
                 <div className="mt-3 space-y-2 text-sm text-tealSoft">
                   <div className="flex items-center gap-2.5">
                     <Mail size={15} className="shrink-0" />
-                    <a href="mailto:jdoutsourcingconsultingltd@yahoo.com" className="hover:underline">
-                      jdoutsourcingconsultingltd@yahoo.com
+                    <a href="mailto:jdconsultancyfirm@gmail.com" className="hover:underline">
+                      jdconsultancyfirm@gmail.com
                     </a>
                   </div>
                   <div className="flex items-center gap-2.5">
