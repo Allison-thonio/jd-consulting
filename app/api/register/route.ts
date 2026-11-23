@@ -8,12 +8,15 @@ const PHONE_REGEX = /^[+]?[\d\s-]{7,20}$/
 
 const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'image/jpeg',
   'image/jpg',
   'image/png',
+  'image/webp',
 ])
 
-const ALLOWED_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png'])
+const ALLOWED_EXTENSIONS = new Set(['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.webp'])
 const GENERIC_MIME_TYPES = new Set(['', 'application/octet-stream', 'binary/octet-stream'])
 
 const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024 // 4 MB
@@ -151,7 +154,7 @@ export async function POST(req: NextRequest) {
 
   if (!isMimeAllowed && !isGenericMimeWithAllowedExt) {
     return NextResponse.json(
-      { error: 'Invalid document type. Allowed formats are PDF, JPEG, JPG, and PNG.' },
+      { error: 'Invalid document type. Allowed formats are PDF, DOC, DOCX, JPEG, JPG, and PNG.' },
       { status: 400 }
     )
   }

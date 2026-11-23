@@ -129,16 +129,22 @@ export async function POST(req: NextRequest) {
 
   const candidateFullName = registration?.fullName || fullName
   const candidatePosition = registration?.position || position
-  const candidatePhone = registration?.phone
-  const candidateAge = registration?.age
-  const candidateLocation = registration?.location
+  const candidatePhone = registration?.phone || (typeof (body as any).phone === 'string' ? (body as any).phone : undefined)
+  const candidateAge = registration?.age || (body as any).age
+  const candidateLocation = registration?.location || (typeof (body as any).location === 'string' ? (body as any).location : undefined)
   const candidateEducation = registration?.education || level
-  const candidateExperience = registration?.experience
+  const candidateExperience = registration?.experience || (typeof (body as any).experience === 'string' ? (body as any).experience : undefined)
 
   const attachment =
     registration && registration.documentFilename && registration.documentBuffer && registration.documentBuffer.length > 0
       ? { filename: registration.documentFilename, content: registration.documentBuffer }
       : null
+
+  if (attachment) {
+    console.log(`[SubmitTest] Attachment verified for ${email}: ${attachment.filename} (${attachment.content.length} bytes)`)
+  } else {
+    console.warn(`[SubmitTest] No document attachment found in store for ${email}`)
+  }
 
   // 5. Send Combined Results + Candidate Registration + CV attachment via Resend Email
   const emailResult = await sendCombinedRegistrationAndTestEmail(

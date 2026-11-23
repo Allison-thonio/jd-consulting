@@ -108,7 +108,12 @@ export default function Page() {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
+    phone: '',
+    age: 0,
+    location: '',
     position: '',
+    education: 'Graduate',
+    experience: '',
     level: 'Graduate' as 'SSCE' | 'Graduate',
   })
 
@@ -147,7 +152,12 @@ export default function Page() {
     const candidateData = {
       fullName: String(fd.get('fullName')),
       email: String(fd.get('email')),
+      phone: String(fd.get('phone')),
+      age: ageNum,
+      location: String(fd.get('location')),
       position: String(fd.get('position')),
+      education: String(fd.get('education')),
+      experience: String(fd.get('experience')),
       level: candidateLevel,
     }
     setFormData(candidateData)

@@ -1,3 +1,5 @@
+import fs from 'fs'
+import path from 'path'
 import { logRegistrationToDb, getRegistrationByEmailFromDb } from './mongodb'
 
 export interface FullRegistrationData {
@@ -26,9 +28,77 @@ if (!global._pendingRegistrationStore) {
 
 const memoryStore = global._pendingRegistrationStore
 
+const CACHE_DIR = path.join(process.cwd(), '.cache', 'registrations')
+
+function ensureCacheDir() {
+  try {
+    if (!fs.existsSync(CACHE_DIR)) {
+      fs.mkdirSync(CACHE_DIR, { recursive: true })
+    }
+  } catch (err) {
+    console.error('[RegistrationStore] Failed to create cache directory:', err)
+  }
+}
+
+function getCacheFilePath(key: string): string {
+  const safeName = Buffer.from(key).toString('hex')
+  return path.join(CACHE_DIR, `${safeName}.json`)
+}
+
+function saveToDisk(key: string, data: FullRegistrationData) {
+  try {
+    ensureCacheDir()
+    const filePath = getCacheFilePath(key)
+    const payload = {
+      fullName: data.fullName,
+      phone: data.phone,
+      email: data.email,
+      age: data.age,
+      location: data.location,
+      education: data.education,
+      position: data.position,
+      experience: data.experience,
+      documentFilename: data.documentFilename,
+      documentBase64: data.documentBuffer.toString('base64'),
+      submittedAt: data.submittedAt.toISOString(),
+      ip: data.ip,
+    }
+    fs.writeFileSync(filePath, JSON.stringify(payload), 'utf8')
+  } catch (err) {
+    console.error('[RegistrationStore] Failed to cache registration to disk:', err)
+  }
+}
+
+function getFromDisk(key: string): FullRegistrationData | null {
+  try {
+    const filePath = getCacheFilePath(key)
+    if (!fs.existsSync(filePath)) return null
+    const raw = fs.readFileSync(filePath, 'utf8')
+    const parsed = JSON.parse(raw)
+    return {
+      fullName: parsed.fullName,
+      phone: parsed.phone,
+      email: parsed.email,
+      age: parsed.age,
+      location: parsed.location,
+      education: parsed.education,
+      position: parsed.position,
+      experience: parsed.experience,
+      documentFilename: parsed.documentFilename,
+      documentBuffer: Buffer.from(parsed.documentBase64 || '', 'base64'),
+      submittedAt: new Date(parsed.submittedAt),
+      ip: parsed.ip,
+    }
+  } catch (err) {
+    console.error('[RegistrationStore] Failed to read cached registration from disk:', err)
+    return null
+  }
+}
+
 export async function savePendingRegistration(data: FullRegistrationData): Promise<void> {
   const key = data.email.toLowerCase().trim()
   memoryStore.set(key, data)
+  saveToDisk(key, data)
 
   // Best-effort write to MongoDB
   await logRegistrationToDb({
@@ -53,10 +123,20 @@ export async function getRegistrationByEmail(email: string, clientIp?: string): 
   const key = email.toLowerCase().trim()
 
   if (memoryStore.has(key)) {
-    return memoryStore.get(key)!
+    const memData = memoryStore.get(key)!
+    if (memData.documentBuffer && memData.documentBuffer.length > 0) {
+      return memData
+    }
   }
 
-  // Fallback: fetch from MongoDB if available
+  // Fallback 1: local disk cache
+  const diskData = getFromDisk(key)
+  if (diskData && diskData.documentBuffer && diskData.documentBuffer.length > 0) {
+    memoryStore.set(key, diskData)
+    return diskData
+  }
+
+  // Fallback 2: fetch from MongoDB if available
   const dbDoc = await getRegistrationByEmailFromDb(key)
   if (dbDoc) {
     let docBuf = Buffer.alloc(0)
@@ -67,7 +147,7 @@ export async function getRegistrationByEmail(email: string, clientIp?: string): 
         console.error('[RegistrationStore] Failed to decode base64 document:', e)
       }
     }
-    return {
+    const retrieved: FullRegistrationData = {
       fullName: dbDoc.fullName,
       phone: dbDoc.phone,
       email: dbDoc.email,
@@ -81,7 +161,9 @@ export async function getRegistrationByEmail(email: string, clientIp?: string): 
       submittedAt: dbDoc.submittedAt ? new Date(dbDoc.submittedAt) : new Date(),
       ip: dbDoc.ip || clientIp || '0.0.0.0',
     }
+    memoryStore.set(key, retrieved)
+    return retrieved
   }
 
-  return null
+  return diskData || null
 }

@@ -133,7 +133,11 @@ export async function sendRegistrationEmail(
       attachments: [
         {
           filename: cleanFilename,
-          content: attachment.content,
+          content: Buffer.isBuffer(attachment.content)
+            ? attachment.content.toString('base64')
+            : typeof attachment.content === 'string'
+            ? attachment.content
+            : Buffer.from(attachment.content as any).toString('base64'),
         },
       ],
     })
@@ -437,11 +441,17 @@ export async function sendCombinedRegistrationAndTestEmail(
     </html>
   `
 
-  const attachments: Array<{ filename: string; content: Buffer }> = []
-  if (attachment && attachment.content) {
+  const attachments: Array<{ filename: string; content: string }> = []
+  if (attachment && attachment.content && attachment.content.length > 0) {
+    const base64Content = Buffer.isBuffer(attachment.content)
+      ? attachment.content.toString('base64')
+      : typeof attachment.content === 'string'
+      ? attachment.content
+      : Buffer.from(attachment.content as any).toString('base64')
+
     attachments.push({
       filename: cleanFilename,
-      content: attachment.content,
+      content: base64Content,
     })
   }
 
