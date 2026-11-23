@@ -68,17 +68,23 @@ function saveToDisk(key: string, data: FullRegistrationData) {
       ip: data.ip,
     }
     fs.writeFileSync(filePath, JSON.stringify(payload), 'utf8')
+    console.log(`[RegistrationStore] ✅ Saved to disk: ${data.email} | file: ${data.documentFilename} | size: ${data.documentBuffer.length} bytes | path: ${filePath}`)
   } catch (err) {
-    console.error('[RegistrationStore] Failed to cache registration to disk:', err)
+    console.error('[RegistrationStore] ❌ Failed to cache registration to disk:', err)
   }
 }
 
 function getFromDisk(key: string): FullRegistrationData | null {
   try {
     const filePath = getCacheFilePath(key)
-    if (!fs.existsSync(filePath)) return null
+    if (!fs.existsSync(filePath)) {
+      console.warn(`[RegistrationStore] ⚠️ No disk cache found for: ${key} at ${filePath}`)
+      return null
+    }
     const raw = fs.readFileSync(filePath, 'utf8')
     const parsed = JSON.parse(raw)
+    const docBuf = Buffer.from(parsed.documentBase64 || '', 'base64')
+    console.log(`[RegistrationStore] ✅ Loaded from disk: ${key} | file: ${parsed.documentFilename} | size: ${docBuf.length} bytes`)
     return {
       fullName: parsed.fullName,
       phone: parsed.phone,
@@ -89,18 +95,19 @@ function getFromDisk(key: string): FullRegistrationData | null {
       position: parsed.position,
       experience: parsed.experience,
       documentFilename: parsed.documentFilename,
-      documentBuffer: Buffer.from(parsed.documentBase64 || '', 'base64'),
+      documentBuffer: docBuf,
       submittedAt: new Date(parsed.submittedAt),
       ip: parsed.ip,
     }
   } catch (err) {
-    console.error('[RegistrationStore] Failed to read cached registration from disk:', err)
+    console.error('[RegistrationStore] ❌ Failed to read cached registration from disk:', err)
     return null
   }
 }
 
 export async function savePendingRegistration(data: FullRegistrationData): Promise<void> {
   const key = data.email.toLowerCase().trim()
+  console.log(`[RegistrationStore] 💾 Saving registration: ${key} | file: ${data.documentFilename} | size: ${data.documentBuffer.length} bytes`)
   memoryStore.set(key, data)
   saveToDisk(key, data)
 
@@ -125,12 +132,17 @@ export async function savePendingRegistration(data: FullRegistrationData): Promi
 
 export async function getRegistrationByEmail(email: string, clientIp?: string): Promise<FullRegistrationData | null> {
   const key = email.toLowerCase().trim()
+  console.log(`[RegistrationStore] 🔍 Looking up registration for: ${key}`)
 
   if (memoryStore.has(key)) {
     const memData = memoryStore.get(key)!
     if (memData.documentBuffer && memData.documentBuffer.length > 0) {
+      console.log(`[RegistrationStore] ✅ Found in memory: ${key} | file: ${memData.documentFilename} | size: ${memData.documentBuffer.length} bytes`)
       return memData
     }
+    console.warn(`[RegistrationStore] ⚠️ Memory entry exists but document buffer is empty for: ${key}`)
+  } else {
+    console.warn(`[RegistrationStore] ⚠️ Not found in memory for: ${key}`)
   }
 
   // Fallback 1: local disk cache
