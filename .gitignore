@@ -38,3 +38,5 @@ yarn-error.log*
 pnpm-debug.log*
 .DS_Store
 Thumbs.db
+# Local registration cache (disk-persisted CV store)
+.cache/

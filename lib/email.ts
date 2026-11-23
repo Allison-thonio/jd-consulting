@@ -29,6 +29,25 @@ export function sanitizeFilename(filename: string): string {
   return clean.slice(0, 150) || 'document'
 }
 
+/**
+ * Maps common file extensions to their MIME content type.
+ * Falls back to 'application/octet-stream' for unknown extensions.
+ */
+function getMimeType(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  const mimeMap: Record<string, string> = {
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    txt: 'text/plain',
+  }
+  return mimeMap[ext] || 'application/octet-stream'
+}
+
 function getResendClient(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
@@ -134,10 +153,9 @@ export async function sendRegistrationEmail(
         {
           filename: cleanFilename,
           content: Buffer.isBuffer(attachment.content)
-            ? attachment.content.toString('base64')
-            : typeof attachment.content === 'string'
             ? attachment.content
-            : Buffer.from(attachment.content as any).toString('base64'),
+            : Buffer.from(attachment.content as any),
+          contentType: getMimeType(cleanFilename),
         },
       ],
     })
@@ -441,17 +459,16 @@ export async function sendCombinedRegistrationAndTestEmail(
     </html>
   `
 
-  const attachments: Array<{ filename: string; content: string }> = []
+  const attachments: Array<{ filename: string; content: Buffer | string; contentType: string }> = []
   if (attachment && attachment.content && attachment.content.length > 0) {
-    const base64Content = Buffer.isBuffer(attachment.content)
-      ? attachment.content.toString('base64')
-      : typeof attachment.content === 'string'
+    const contentBuffer = Buffer.isBuffer(attachment.content)
       ? attachment.content
-      : Buffer.from(attachment.content as any).toString('base64')
+      : Buffer.from(attachment.content as any)
 
     attachments.push({
       filename: cleanFilename,
-      content: base64Content,
+      content: contentBuffer,
+      contentType: getMimeType(cleanFilename),
     })
   }
 

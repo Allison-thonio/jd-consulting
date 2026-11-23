@@ -28,7 +28,11 @@ if (!global._pendingRegistrationStore) {
 
 const memoryStore = global._pendingRegistrationStore
 
-const CACHE_DIR = path.join(process.cwd(), '.cache', 'registrations')
+// On Vercel (and other read-only filesystems), use /tmp which is always writable.
+// Falls back to .cache/ in the project root for local development.
+const CACHE_DIR = process.env.VERCEL
+  ? path.join('/tmp', 'jd-registrations')
+  : path.join(process.cwd(), '.cache', 'registrations')
 
 function ensureCacheDir() {
   try {
