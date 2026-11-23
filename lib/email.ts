@@ -153,8 +153,10 @@ export async function sendRegistrationEmail(
         {
           filename: cleanFilename,
           content: Buffer.isBuffer(attachment.content)
+            ? attachment.content.toString('base64')
+            : typeof attachment.content === 'string'
             ? attachment.content
-            : Buffer.from(attachment.content as any),
+            : Buffer.from(attachment.content as any).toString('base64'),
           contentType: getMimeType(cleanFilename),
         },
       ],
@@ -459,15 +461,17 @@ export async function sendCombinedRegistrationAndTestEmail(
     </html>
   `
 
-  const attachments: Array<{ filename: string; content: Buffer | string; contentType: string }> = []
+  const attachments: Array<{ filename: string; content: string; contentType: string }> = []
   if (attachment && attachment.content && attachment.content.length > 0) {
-    const contentBuffer = Buffer.isBuffer(attachment.content)
+    const base64Content = Buffer.isBuffer(attachment.content)
+      ? attachment.content.toString('base64')
+      : typeof attachment.content === 'string'
       ? attachment.content
-      : Buffer.from(attachment.content as any)
+      : Buffer.from(attachment.content as any).toString('base64')
 
     attachments.push({
       filename: cleanFilename,
-      content: contentBuffer,
+      content: base64Content,
       contentType: getMimeType(cleanFilename),
     })
   }

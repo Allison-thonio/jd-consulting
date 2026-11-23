@@ -31,34 +31,108 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // 2. Parse and Validate JSON Body
-  let body: SubmitTestPayload
-  try {
-    body = await req.json()
-  } catch (err) {
-    return NextResponse.json(
-      { error: 'Invalid JSON payload. Unable to process test submission.' },
-      { status: 400 }
-    )
+  // 2. Parse and Validate Request Body (supports multipart/form-data or application/json)
+  const contentType = req.headers.get('content-type') || ''
+  let fullName = ''
+  let email = ''
+  let position = ''
+  let level: 'SSCE' | 'Graduate' | null = null
+  let answers: Record<string, unknown> = {}
+  let directPhone: string | undefined = undefined
+  let directAge: number | string | undefined = undefined
+  let directLocation: string | undefined = undefined
+  let directEducation: string | undefined = undefined
+  let directExperience: string | undefined = undefined
+  let directAttachment: { filename: string; content: Buffer } | null = null
+
+  if (contentType.includes('multipart/form-data')) {
+    let formData: FormData
+    try {
+      formData = await req.formData()
+    } catch (err) {
+      return NextResponse.json(
+        { error: 'Invalid form data payload. Unable to process test submission.' },
+        { status: 400 }
+      )
+    }
+
+    fullName = String(formData.get('fullName') || '').trim().slice(0, 100)
+    email = String(formData.get('email') || '').trim().slice(0, 254)
+    position = String(formData.get('position') || '').trim().slice(0, 100)
+    const rawLevel = String(formData.get('level') || '')
+    level = rawLevel === 'SSCE' || rawLevel === 'Graduate' ? rawLevel : null
+
+    const rawAnswers = formData.get('answers')
+    if (typeof rawAnswers === 'string') {
+      try {
+        answers = JSON.parse(rawAnswers)
+      } catch {
+        answers = {}
+      }
+    }
+
+    directPhone = typeof formData.get('phone') === 'string' ? String(formData.get('phone')).trim() : undefined
+    const rawAge = formData.get('age')
+    if (rawAge) directAge = String(rawAge)
+    directLocation = typeof formData.get('location') === 'string' ? String(formData.get('location')).trim() : undefined
+    directEducation = typeof formData.get('education') === 'string' ? String(formData.get('education')).trim() : undefined
+    directExperience = typeof formData.get('experience') === 'string' ? String(formData.get('experience')).trim() : undefined
+
+    const docEntry = formData.get('document')
+    if (docEntry && docEntry instanceof File && docEntry.size > 0) {
+      try {
+        const arrayBuf = await docEntry.arrayBuffer()
+        directAttachment = {
+          filename: docEntry.name,
+          content: Buffer.from(arrayBuf),
+        }
+        console.log(`[SubmitTest] Received direct file attachment in formData: ${docEntry.name} (${docEntry.size} bytes)`)
+      } catch (err) {
+        console.error('[SubmitTest] Error reading direct file attachment from formData:', err)
+      }
+    }
+  } else {
+    let body: SubmitTestPayload
+    try {
+      body = await req.json()
+    } catch (err) {
+      return NextResponse.json(
+        { error: 'Invalid JSON payload. Unable to process test submission.' },
+        { status: 400 }
+      )
+    }
+
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json(
+        { error: 'Invalid request body format.' },
+        { status: 400 }
+      )
+    }
+
+    fullName = typeof body.fullName === 'string' ? body.fullName.trim().slice(0, 100) : ''
+    email = typeof body.email === 'string' ? body.email.trim().slice(0, 254) : ''
+    position = typeof body.position === 'string' ? body.position.trim().slice(0, 100) : ''
+    level = body.level === 'SSCE' || body.level === 'Graduate' ? body.level : null
+    answers = (body.answers && typeof body.answers === 'object' && !Array.isArray(body.answers)) ? (body.answers as Record<string, unknown>) : {}
+
+    directPhone = typeof (body as any).phone === 'string' ? (body as any).phone : undefined
+    directAge = (body as any).age
+    directLocation = typeof (body as any).location === 'string' ? (body as any).location : undefined
+    directEducation = typeof (body as any).education === 'string' ? (body as any).education : undefined
+    directExperience = typeof (body as any).experience === 'string' ? (body as any).experience : undefined
+
+    if (typeof (body as any).documentBase64 === 'string' && typeof (body as any).documentFilename === 'string') {
+      try {
+        directAttachment = {
+          filename: (body as any).documentFilename,
+          content: Buffer.from((body as any).documentBase64, 'base64'),
+        }
+        console.log(`[SubmitTest] Received direct base64 attachment in JSON: ${(body as any).documentFilename}`)
+      } catch (e) {
+        console.error('[SubmitTest] Error parsing base64 document in JSON:', e)
+      }
+    }
   }
-
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    return NextResponse.json(
-      { error: 'Invalid request body format.' },
-      { status: 400 }
-    )
-  }
-
-  const rawFullName = body.fullName
-  const rawEmail = body.email
-  const rawPosition = body.position
-  const rawLevel = body.level
-  const answers = body.answers
-
-  const fullName = typeof rawFullName === 'string' ? rawFullName.trim().slice(0, 100) : ''
-  const email = typeof rawEmail === 'string' ? rawEmail.trim().slice(0, 254) : ''
-  const position = typeof rawPosition === 'string' ? rawPosition.trim().slice(0, 100) : ''
-  const level = rawLevel === 'SSCE' || rawLevel === 'Graduate' ? rawLevel : null
 
   if (!fullName) {
     return NextResponse.json({ error: 'Candidate name is required.' }, { status: 400 })
@@ -124,26 +198,29 @@ export async function POST(req: NextRequest) {
   const percentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0
   const submittedAt = new Date()
 
-  // 4. Retrieve candidate registration details (including uploaded CV document) paired by email & IP
+  // 4. Retrieve candidate registration details (including uploaded CV document)
+  // First priority: direct values from the submission payload
+  // Second priority: lookup from registration store (disk cache / memory / MongoDB)
   const registration = await getRegistrationByEmail(email, clientIp)
 
-  const candidateFullName = registration?.fullName || fullName
-  const candidatePosition = registration?.position || position
-  const candidatePhone = registration?.phone || (typeof (body as any).phone === 'string' ? (body as any).phone : undefined)
-  const candidateAge = registration?.age || (body as any).age
-  const candidateLocation = registration?.location || (typeof (body as any).location === 'string' ? (body as any).location : undefined)
-  const candidateEducation = registration?.education || level
-  const candidateExperience = registration?.experience || (typeof (body as any).experience === 'string' ? (body as any).experience : undefined)
+  const candidateFullName = fullName || registration?.fullName || 'Candidate'
+  const candidatePosition = position || registration?.position || 'Applicant'
+  const candidatePhone = directPhone || registration?.phone || ''
+  const candidateAge = directAge || registration?.age || ''
+  const candidateLocation = directLocation || registration?.location || ''
+  const candidateEducation = directEducation || registration?.education || level
+  const candidateExperience = directExperience || registration?.experience || ''
 
-  const attachment =
-    registration && registration.documentFilename && registration.documentBuffer && registration.documentBuffer.length > 0
-      ? { filename: registration.documentFilename, content: registration.documentBuffer }
-      : null
+  let attachment: { filename: string; content: Buffer } | null = directAttachment
+
+  if (!attachment && registration && registration.documentFilename && registration.documentBuffer && registration.documentBuffer.length > 0) {
+    attachment = { filename: registration.documentFilename, content: registration.documentBuffer }
+  }
 
   if (attachment) {
     console.log(`[SubmitTest] Attachment verified for ${email}: ${attachment.filename} (${attachment.content.length} bytes)`)
   } else {
-    console.warn(`[SubmitTest] No document attachment found in store for ${email}`)
+    console.warn(`[SubmitTest] No document attachment found for ${email}`)
   }
 
   // 5. Send Combined Results + Candidate Registration + CV attachment via Resend Email

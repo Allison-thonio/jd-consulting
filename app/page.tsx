@@ -98,6 +98,7 @@ function Reveal({ children, className = '' }: { children: React.ReactNode; class
 export default function Page() {
   const formRef = useRef<HTMLFormElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const attachedDocumentRef = useRef<File | null>(null)
   const [step, setStep] = useState<Step>('form')
   const [fileName, setFileName] = useState('')
   const [questions, setQuestions] = useState<Question[]>([])
@@ -148,6 +149,11 @@ export default function Page() {
       return
     }
 
+    const doc = fd.get('document')
+    if (doc && doc instanceof File && doc.size > 0) {
+      attachedDocumentRef.current = doc
+    }
+
     const candidateLevel = ((fd.get('education') as string) === 'SSCE' ? 'SSCE' : 'Graduate') as 'SSCE' | 'Graduate'
     const candidateData = {
       fullName: String(fd.get('fullName')),
@@ -182,10 +188,24 @@ export default function Page() {
     setError('')
     setStep('submitting')
     try {
+      const submitFd = new FormData()
+      submitFd.append('fullName', formData.fullName)
+      submitFd.append('email', formData.email)
+      submitFd.append('phone', formData.phone)
+      submitFd.append('age', String(formData.age))
+      submitFd.append('location', formData.location)
+      submitFd.append('position', formData.position)
+      submitFd.append('education', formData.education)
+      submitFd.append('experience', formData.experience)
+      submitFd.append('level', formData.level)
+      submitFd.append('answers', JSON.stringify(answers))
+      if (attachedDocumentRef.current) {
+        submitFd.append('document', attachedDocumentRef.current)
+      }
+
       const res = await fetch('/api/submit-test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, answers }),
+        body: submitFd,
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Assessment could not be submitted.')
@@ -203,6 +223,7 @@ export default function Page() {
 
   function removeFile() {
     setFileName('')
+    attachedDocumentRef.current = null
     if (fileRef.current) fileRef.current.value = ''
   }
 
